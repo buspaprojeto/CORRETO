@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Transporte Universitário</title>
+    <!-- Carregando Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!--
+      Carregando a biblioteca sql.js (sql-wasm.js)
+      Esta é a biblioteca que permite criar bancos SQLite no navegador
+    -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+
+    <style>
+        /* Estilo customizado para o foco dos inputs */
+        .form-input:focus {
+            border-color: #34d399; /* Verde */
+            box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.5);
+            outline: none;
+        }
+        /* Cor da borda ativa da aba */
+        .tab-active {
+            border-color: #34d399 !important;
+            color: #34d399 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 font-sans">
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+
+            <!-- Seção de Inicialização -->
+            <div id="loaderSection" class="bg-gray-800 shadow-2xl rounded-2xl p-8 border-t-4 border-green-500">
+                <h2 class="text-3xl font-bold text-white mb-6 text-center">Sistema de Transporte Universitário</h2>
+                <p class="text-gray-400 text-center mb-6">Clique no botão abaixo para iniciar o sistema</p>
+                
+                <button id="initSystemButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                    Iniciar Sistema
+                </button>
+                <div id="loaderMessage" class="mt-6 text-center text-sm font-medium">
+                    <!-- Mensagens de status do carregamento -->
+                </div>
+            </div>
+
+            <!-- Card Principal (Login/Cadastro) - Escondido inicialmente -->
+            <div id="authSection" class="hidden bg-gray-800 shadow-2xl rounded-2xl overflow-hidden border-t-4 border-green-500">
+
+                <!-- Abas (Tabs) -->
+                <div class="flex border-b border-gray-700">
+                    <button id="tabLogin" class="flex-1 py-4 px-6 text-center font-semibold text-gray-400 border-b-2 border-transparent hover:text-green-400 focus:outline-none tab-active">
+                        Login
+                    </button>
+                    <button id="tabRegister" class="flex-1 py-4 px-6 text-center font-semibold text-gray-400 border-b-2 border-transparent hover:text-green-400 focus:outline-none">
+                        Cadastro
+                    </button>
+                </div>
+
+                <div class="p-8">
+
+                    <!-- Formulário de Login -->
+                    <form id="loginForm">
+                        <h2 class="text-3xl font-bold text-white mb-6 text-center">Acessar Sistema</h2>
+
+                        <div class="mb-5">
+                            <label for="loginEmail" class="block mb-2 text-sm font-medium text-gray-300">Email</label>
+                            <input type="email" id="loginEmail" class="form-input w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:bg-gray-600" placeholder="voce@email.com" required>
+                        </div>
+
+                        <div class="mb-8">
+                            <label for="loginPassword" class="block mb-2 text-sm font-medium text-gray-300">Senha</label>
+                            <input type="password" id="loginPassword" class="form-input w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:bg-gray-600" placeholder="••••••••" required>
+                        </div>
+
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                            Entrar
+                        </button>
+                    </form>
+
+                    <!-- Formulário de Cadastro (Escondido por padrão) -->
+                    <form id="registerForm" class="hidden">
+                        <h2 class="text-3xl font-bold text-white mb-6 text-center">Criar Conta</h2>
+
+                        <div class="mb-5">
+                            <label for="registerEmail" class="block mb-2 text-sm font-medium text-gray-300">Email</label>
+                            <input type="email" id="registerEmail" class="form-input w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:bg-gray-600" placeholder="voce@email.com" required>
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="registerPassword" class="block mb-2 text-sm font-medium text-gray-300">Senha</label>
+                            <input type="password" id="registerPassword" class="form-input w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:bg-gray-600" placeholder="Mínimo 6 caracteres" required>
+                        </div>
+
+                        <div class="mb-8">
+                            <label for="confirmPassword" class="block mb-2 text-sm font-medium text-gray-300">Confirmar Senha</label>
+                            <input type="password" id="confirmPassword" class="form-input w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:bg-gray-600" placeholder="Repita a senha" required>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                            Cadastrar
+                        </button>
+                    </form>
+
+                    <!-- Área de Mensagens -->
+                    <div id="message" class="mt-6 text-center text-sm font-medium">
+                        <!-- Mensagens de sucesso ou erro aparecerão aqui -->
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Dashboard Principal - Escondido inicialmente -->
+            <div id="dashboardSection" class="hidden bg-gray-800 shadow-2xl rounded-2xl overflow-hidden border-t-4 border-green-500">
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-white">Sistema de Transporte</h2>
+                        <button id="logoutButton" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">
+                            Sair
+                        </button>
+                    </div>
+
+                    <!-- Informações do Usuário -->
+                    <div id="userInfo" class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h3 class="text-xl font-semibold text-white mb-2">Informações do Usuário</h3>
+                        <p class="text-gray-300" id="userEmail"></p>
+                    </div>
+
+                    <!-- Abas do Dashboard -->
+                    <div class="flex border-b border-gray-700 mb-6">
+                        <button id="tabRotas" class="flex-1 py-3 px-4 text-center font-semibold text-gray-400 border-b-2 border-transparent hover:text-green-400 focus:outline-none tab-active">
+                            Rotas
+                        </button>
+                        <button id="tabHorarios" class="flex-1 py-3 px-4 text-center font-semibold text-gray-400 border-b-2 border-transparent hover:text-green-400 focus:outline-none">
+                            Horários
+                        </button>
+                        <button id="tabReservas" class="flex-1 py-3 px-4 text-center font-semibold text-gray-400 border-b-2 border-transparent hover:text-green-400 focus:outline-none">
+                            Minhas Reservas
+                        </button>
+                    </div>
+
+                    <!-- Conteúdo das Abas -->
+                    <div id="dashboardContent">
+                        <!-- Conteúdo da aba Rotas -->
+                        <div id="rotasContent">
+                            <h3 class="text-xl font-semibold text-white mb-4">Rotas Disponíveis</h3>
+                            <div id="rotasList" class="space-y-4">
+                                <!-- As rotas serão carregadas dinamicamente aqui -->
+                            </div>
+                        </div>
+
+                        <!-- Conteúdo da aba Horários -->
+                        <div id="horariosContent" class="hidden">
+                            <h3 class="text-xl font-semibold text-white mb-4">Horários dos Ônibus</h3>
+                            <div id="horariosList" class="space-y-4">
+                                <!-- Os horários serão carregados dinamicamente aqui -->
+                            </div>
+                        </div>
+
+                        <!-- Conteúdo da aba Reservas -->
+                        <div id="reservasContent" class="hidden">
+                            <h3 class="text-xl font-semibold text-white mb-4">Minhas Reservas</h3>
+                            <div id="reservasList" class="space-y-4">
+                                <!-- As reservas serão carregadas dinamicamente aqui -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Área de Mensagens do Dashboard -->
+                    <div id="dashboardMessage" class="mt-6 text-center text-sm font-medium">
+                        <!-- Mensagens aparecerão aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Variável Global do Banco de Dados ---
+        let db; // Irá guardar a instância do banco de dados em memória
+        let SQL; // Irá guardar o motor do sql.js
+        let currentUser = null; // Irá guardar o usuário logado
+
+        // --- Seletores do DOM ---
+        const loaderSection = document.getElementById('loaderSection');
+        const authSection = document.getElementById('authSection');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const initSystemButton = document.getElementById('initSystemButton');
+        const loaderMessage = document.getElementById('loaderMessage');
+
+        const tabLogin = document.getElementById('tabLogin');
+        const tabRegister = document.getElementById('tabRegister');
+
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+
+        const message = document.getElementById('message');
+        const logoutButton = document.getElementById('logoutButton');
+        const userInfo = document.getElementById('userInfo');
+        const userEmail = document.getElementById('userEmail');
+
+        // Abas do Dashboard
+        const tabRotas = document.getElementById('tabRotas');
+        const tabHorarios = document.getElementById('tabHorarios');
+        const tabReservas = document.getElementById('tabReservas');
+
+        // Conteúdo das abas
+        const rotasContent = document.getElementById('rotasContent');
+        const horariosContent = document.getElementById('horariosContent');
+        const reservasContent = document.getElementById('reservasContent');
+
+        // Listas de conteúdo
+        const rotasList = document.getElementById('rotasList');
+        const horariosList = document.getElementById('horariosList');
+        const reservasList = document.getElementById('reservasList');
+
+        const dashboardMessage = document.getElementById('dashboardMessage');
+
+        // --- Função para mostrar mensagens ---
+        function showMessage(text, type, target = 'message') {
+            const el = document.getElementById(target);
+            el.textContent = text;
+            if (type === 'error') {
+                el.className = 'mt-6 text-center text-sm font-medium text-red-400';
+            } else if (type === 'success') {
+                el.className = 'mt-6 text-center text-sm font-medium text-green-400';
+            } else {
+                el.className = 'mt-6 text-center text-sm font-medium text-gray-400';
+            }
+        }
+
+        // --- Lógica de Inicialização do Sistema ---
+        initSystemButton.addEventListener('click', async () => {
+            showMessage('Iniciando sistema...', 'info', 'loaderMessage');
+
+            try {
+                // 1. Inicia o motor sql.js
+                if (!SQL) {
+                    SQL = await initSqlJs({
+                        locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+                    });
+                }
+
+                showMessage('Criando banco de dados...', 'info', 'loaderMessage');
+
+                // 2. Cria um novo banco de dados em memória
+                db = new SQL.Database();
+
+                // 3. Cria as tabelas necessárias
+                db.run(`
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT UNIQUE NOT NULL,
+                        password TEXT NOT NULL,
+                        tipo TEXT DEFAULT 'aluno'
+                    );
+                `);
+
+                db.run(`
+                    CREATE TABLE IF NOT EXISTS rotas (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        nome TEXT NOT NULL,
+                        origem TEXT NOT NULL,
+                        destino TEXT NOT NULL,
+                        descricao TEXT
+                    );
+                `);
+
+                db.run(`
+                    CREATE TABLE IF NOT EXISTS horarios (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        rota_id INTEGER NOT NULL,
+                        horario_saida TEXT NOT NULL,
+                        FOREIGN KEY (rota_id) REFERENCES rotas(id)
+                    );
+                `);
+
+                db.run(`
+                    CREATE TABLE IF NOT EXISTS reservas (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        rota_id INTEGER NOT NULL,
+                        horario_id INTEGER NOT NULL,
+                        data_reserva TEXT NOT NULL,
+                        status TEXT DEFAULT 'ativa',
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                        FOREIGN KEY (rota_id) REFERENCES rotas(id),
+                        FOREIGN KEY (horario_id) REFERENCES horarios(id)
+                    );
+                `);
+
+                // 4. Insere dados de exemplo
+                // Verificar se já existem rotas
+                const rotasCount = db.exec("SELECT COUNT(*) as count FROM rotas");
+                if (rotasCount[0].values[0][0] === 0) {
+                    // Inserir rotas de exemplo
+                    db.run("INSERT INTO rotas (nome, origem, destino, descricao) VALUES (?, ?, ?, ?)", 
+                        ["Campus Central", "Centro", "Campus Universitário", "Rota principal do campus"]);
+                    db.run("INSERT INTO rotas (nome, origem, destino, descricao) VALUES (?, ?, ?, ?)", 
+                        ["Zona Norte", "Zona Norte", "Campus Universitário", "Atende bairros da zona norte"]);
+                    db.run("INSERT INTO rotas (nome, origem, destino, descricao) VALUES (?, ?, ?, ?)", 
+                        ["Zona Sul", "Zona Sul", "Campus Universitário", "Atende bairros da zona sul"]);
+                    
+                    // Inserir horários de exemplo
+                    db.run("INSERT INTO horarios (rota_id, horario_saida) VALUES (?, ?)", [1, "07:00"]);
+                    db.run("INSERT INTO horarios (rota_id, horario_saida) VALUES (?, ?)", [1, "08:30"]);
+                    db.run("INSERT INTO horarios (rota_id, horario_saida) VALUES (?, ?)", [1, "10:00"]);
+                    db.run("INSERT INTO horarios (rota_id, horario_saida) VALUES (?, ?)", [2, "07:15"]);
+                    db.run("INSERT INTO horarios (rota_id, horario_saida) VALUES (?, ?)", [2, "09:00"]);
+                    db.run("INSERT INTO horarios (rota_id, horario_saida) VALUES (?, ?)", [3, "07:30"]);
+                    db.run("INSERT INTO horarios (rota_id, horario_saida) VALUES (?, ?)", [3, "09:30"]);
+                    
+                    // Inserir um usuário admin de exemplo
+                    db.run("INSERT INTO users (email, password, tipo) VALUES (?, ?, ?)", 
+                        ["admin@universidade.com", "123456", "admin"]);
+                }
+
+                showMessage('Sistema carregado com sucesso!', 'success', 'loaderMessage');
+
+                // 5. Esconde o loader e mostra a tela de login
+                setTimeout(() => {
+                    loaderSection.classList.add('hidden');
+                    authSection.classList.remove('hidden');
+                }, 1000);
+
+            } catch (err) {
+                console.error(err);
+                showMessage(`Erro ao iniciar o sistema: ${err.message}`, 'error', 'loaderMessage');
+            }
+        });
+
+        // --- Lógica das Abas ---
+        tabLogin.addEventListener('click', () => {
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            tabLogin.classList.add('tab-active');
+            tabRegister.classList.remove('tab-active');
+            message.textContent = '';
+        });
+
+        tabRegister.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            tabLogin.classList.remove('tab-active');
+            tabRegister.classList.add('tab-active');
+            message.textContent = '';
+        });
+
+        // --- Lógica de Cadastro ---
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showMessage('As senhas não conferem.', 'error');
+                return;
+            }
+            if (password.length < 6) {
+                showMessage('A senha deve ter pelo menos 6 caracteres.', 'error');
+                return;
+            }
+
+            try {
+                // Executa o INSERT no banco de dados em memória
+                db.run("INSERT INTO users (email, password) VALUES (?, ?)", [email, password]);
+
+                showMessage('Usuário cadastrado com sucesso!', 'success');
+                registerForm.reset();
+
+                // Mude para a aba de login
+                setTimeout(() => {
+                    tabLogin.click();
+                }, 1000);
+
+            } catch (err) {
+                if (err.message.includes("UNIQUE constraint failed")) {
+                    showMessage('Este email já está cadastrado.', 'error');
+                } else {
+                    showMessage(`Erro ao cadastrar: ${err.message}`, 'error');
+                }
+                console.error(err);
+            }
+        });
+
+        // --- Lógica de Login ---
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                // Prepara a query SQL para evitar SQL injection
+                const stmt = db.prepare("SELECT * FROM users WHERE email = :email AND password = :pass");
+
+                // Associa os valores
+                stmt.bind({ ':email': email, ':pass': password });
+
+                // Executa a query e verifica se retornou uma linha
+                if (stmt.step()) {
+                    const user = stmt.getAsObject(); // Pega os dados do usuário
+                    currentUser = user;
+                    
+                    showMessage(`Login bem-sucedido! Bem-vindo, ${user.email}.`, 'success');
+                    loginForm.reset();
+
+                    // Mostra o dashboard
+                    authSection.classList.add('hidden');
+                    dashboardSection.classList.remove('hidden');
+                    
+                    // Atualiza informações do usuário
+                    userEmail.textContent = `Email: ${user.email}`;
+                    
+                    // Carrega as rotas
+                    carregarRotas();
+                    
+                } else {
+                    showMessage('Email ou senha inválidos.', 'error');
+                }
+
+                // Libera o statement da memória
+                stmt.free();
+
+            } catch (err) {
+                showMessage(`Erro ao fazer login: ${err.message}`, 'error');
+                console.error(err);
+            }
+        });
+
+        // --- Lógica do Logout ---
+        logoutButton.addEventListener('click', () => {
+            currentUser = null;
+            dashboardSection.classList.add('hidden');
+            authSection.classList.remove('hidden');
+            showMessage('Logout realizado com sucesso!', 'success');
+        });
+
+        // --- Lógica das Abas do Dashboard ---
+        tabRotas.addEventListener('click', () => {
+            rotasContent.classList.remove('hidden');
+            horariosContent.classList.add('hidden');
+            reservasContent.classList.add('hidden');
+            tabRotas.classList.add('tab-active');
+            tabHorarios.classList.remove('tab-active');
+            tabReservas.classList.remove('tab-active');
+            
+            carregarRotas();
+        });
+
+        tabHorarios.addEventListener('click', () => {
+            rotasContent.classList.add('hidden');
+            horariosContent.classList.remove('hidden');
+            reservasContent.classList.add('hidden');
+            tabRotas.classList.remove('tab-active');
+            tabHorarios.classList.add('tab-active');
+            tabReservas.classList.remove('tab-active');
+            
+            carregarHorarios();
+        });
+
+        tabReservas.addEventListener('click', () => {
+            rotasContent.classList.add('hidden');
+            horariosContent.classList.add('hidden');
+            reservasContent.classList.remove('hidden');
+            tabRotas.classList.remove('tab-active');
+            tabHorarios.classList.remove('tab-active');
+            tabReservas.classList.add('tab-active');
+            
+            carregarReservas();
+        });
+
+        // --- Funções para carregar dados ---
+        function carregarRotas() {
+            try {
+                const result = db.exec("SELECT * FROM rotas");
+                if (result.length > 0) {
+                    const rotas = result[0].values;
+                    rotasList.innerHTML = '';
+                    
+                    rotas.forEach(rota => {
+                        const rotaDiv = document.createElement('div');
+                        rotaDiv.className = 'bg-gray-700 rounded-lg p-4';
+                        rotaDiv.innerHTML = `
+                            <h4 class="text-lg font-semibold text-white">${rota[1]}</h4>
+                            <p class="text-gray-300">De: ${rota[2]} Para: ${rota[3]}</p>
+                            <p class="text-gray-400 text-sm mt-2">${rota[4] || 'Sem descrição'}</p>
+                            <button class="mt-3 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out ver-horarios" data-rota-id="${rota[0]}">
+                                Ver Horários
+                            </button>
+                        `;
+                        rotasList.appendChild(rotaDiv);
+                    });
+                    
+                    // Adicionar eventos aos botões "Ver Horários"
+                    document.querySelectorAll('.ver-horarios').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const rotaId = this.getAttribute('data-rota-id');
+                            tabHorarios.click();
+                            carregarHorarios(rotaId);
+                        });
+                    });
+                } else {
+                    rotasList.innerHTML = '<p class="text-gray-400">Nenhuma rota disponível.</p>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar rotas:', err);
+                rotasList.innerHTML = '<p class="text-red-400">Erro ao carregar rotas.</p>';
+            }
+        }
+
+        function carregarHorarios(rotaIdFiltro = null) {
+            try {
+                let query = `
+                    SELECT h.id, r.nome, h.horario_saida, r.origem, r.destino 
+                    FROM horarios h 
+                    JOIN rotas r ON h.rota_id = r.id
+                `;
+                
+                if (rotaIdFiltro) {
+                    query += ` WHERE r.id = ${rotaIdFiltro}`;
+                }
+                
+                query += " ORDER BY r.nome, h.horario_saida";
+                
+                const result = db.exec(query);
+                if (result.length > 0) {
+                    const horarios = result[0].values;
+                    horariosList.innerHTML = '';
+                    
+                    horarios.forEach(horario => {
+                        const horarioDiv = document.createElement('div');
+                        horarioDiv.className = 'bg-gray-700 rounded-lg p-4';
+                        horarioDiv.innerHTML = `
+                            <h4 class="text-lg font-semibold text-white">${horario[1]}</h4>
+                            <p class="text-gray-300">Horário: ${horario[2]}</p>
+                            <p class="text-gray-300">De: ${horario[3]} Para: ${horario[4]}</p>
+                            <button class="mt-3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out fazer-reserva" data-horario-id="${horario[0]}" data-rota-nome="${horario[1]}" data-horario="${horario[2]}">
+                                Fazer Reserva
+                            </button>
+                        `;
+                        horariosList.appendChild(horarioDiv);
+                    });
+                    
+                    // Adicionar eventos aos botões "Fazer Reserva"
+                    document.querySelectorAll('.fazer-reserva').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const horarioId = this.getAttribute('data-horario-id');
+                            const rotaNome = this.getAttribute('data-rota-nome');
+                            const horario = this.getAttribute('data-horario');
+                            fazerReserva(horarioId, rotaNome, horario);
+                        });
+                    });
+                } else {
+                    horariosList.innerHTML = '<p class="text-gray-400">Nenhum horário disponível.</p>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar horários:', err);
+                horariosList.innerHTML = '<p class="text-red-400">Erro ao carregar horários.</p>';
+            }
+        }
+
+        function carregarReservas() {
+            try {
+                const result = db.exec(`
+                    SELECT rv.id, rt.nome, h.horario_saida, rv.data_reserva, rv.status 
+                    FROM reservas rv 
+                    JOIN rotas rt ON rv.rota_id = rt.id 
+                    JOIN horarios h ON rv.horario_id = h.id 
+                    WHERE rv.user_id = ${currentUser.id}
+                    ORDER BY rv.data_reserva DESC
+                `);
+                
+                if (result.length > 0) {
+                    const reservas = result[0].values;
+                    reservasList.innerHTML = '';
+                    
+                    reservas.forEach(reserva => {
+                        const reservaDiv = document.createElement('div');
+                        reservaDiv.className = 'bg-gray-700 rounded-lg p-4';
+                        
+                        let statusClass = 'text-yellow-400';
+                        if (reserva[4] === 'ativa') {
+                            statusClass = 'text-green-400';
+                        } else if (reserva[4] === 'cancelada') {
+                            statusClass = 'text-red-400';
+                        }
+                        
+                        reservaDiv.innerHTML = `
+                            <h4 class="text-lg font-semibold text-white">${reserva[1]}</h4>
+                            <p class="text-gray-300">Horário: ${reserva[2]}</p>
+                            <p class="text-gray-300">Data da Reserva: ${reserva[3]}</p>
+                            <p class="${statusClass} font-semibold">Status: ${reserva[4]}</p>
+                            ${reserva[4] === 'ativa' ? 
+                                `<button class="mt-3 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out cancelar-reserva" data-reserva-id="${reserva[0]}">
+                                    Cancelar Reserva
+                                </button>` : 
+                                ''
+                            }
+                        `;
+                        reservasList.appendChild(reservaDiv);
+                    });
+                    
+                    // Adicionar eventos aos botões "Cancelar Reserva"
+                    document.querySelectorAll('.cancelar-reserva').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const reservaId = this.getAttribute('data-reserva-id');
+                            cancelarReserva(reservaId);
+                        });
+                    });
+                } else {
+                    reservasList.innerHTML = '<p class="text-gray-400">Nenhuma reserva encontrada.</p>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar reservas:', err);
+                reservasList.innerHTML = '<p class="text-red-400">Erro ao carregar reservas.</p>';
+            }
+        }
+
+        // --- Funções para operações ---
+        function fazerReserva(horarioId, rotaNome, horario) {
+            try {
+                const dataAtual = new Date().toISOString().split('T')[0];
+                
+                // Verificar se já existe uma reserva ativa para este horário
+                const verificaReserva = db.exec(`
+                    SELECT * FROM reservas 
+                    WHERE user_id = ${currentUser.id} 
+                    AND horario_id = ${horarioId} 
+                    AND status = 'ativa'
+                `);
+                
+                if (verificaReserva.length > 0 && verificaReserva[0].values.length > 0) {
+                    showMessage('Você já tem uma reserva ativa para este horário.', 'error', 'dashboardMessage');
+                    return;
+                }
+                
+                // Obter o rota_id a partir do horario_id
+                const rotaResult = db.exec(`SELECT rota_id FROM horarios WHERE id = ${horarioId}`);
+                if (rotaResult.length === 0) {
+                    showMessage('Erro ao obter informações da rota.', 'error', 'dashboardMessage');
+                    return;
+                }
+                
+                const rotaId = rotaResult[0].values[0][0];
+                
+                // Fazer a reserva
+                db.run(
+                    "INSERT INTO reservas (user_id, rota_id, horario_id, data_reserva) VALUES (?, ?, ?, ?)", 
+                    [currentUser.id, rotaId, horarioId, dataAtual]
+                );
+                
+                showMessage(`Reserva feita com sucesso para ${rotaNome} às ${horario}!`, 'success', 'dashboardMessage');
+                
+                // Atualizar a lista de reservas se estiver na aba de reservas
+                if (!reservasContent.classList.contains('hidden')) {
+                    carregarReservas();
+                }
+            } catch (err) {
+                console.error('Erro ao fazer reserva:', err);
+                showMessage('Erro ao fazer reserva.', 'error', 'dashboardMessage');
+            }
+        }
+
+        function cancelarReserva(reservaId) {
+            try {
+                db.run("UPDATE reservas SET status = 'cancelada' WHERE id = ?", [reservaId]);
+                showMessage('Reserva cancelada com sucesso!', 'success', 'dashboardMessage');
+                carregarReservas();
+            } catch (err) {
+                console.error('Erro ao cancelar reserva:', err);
+                showMessage('Erro ao cancelar reserva.', 'error', 'dashboardMessage');
+            }
+        }
+    </script>
+</body>
+</html>
