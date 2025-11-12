@@ -172,6 +172,72 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Seção de Seleção de Assentos - Escondida inicialmente -->
+            <div id="seatsSection" class="hidden bg-gray-800 shadow-2xl rounded-2xl overflow-hidden border-t-4 border-green-500">
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-white">Selecione seu Assento</h2>
+                        <button id="backFromSeats" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">
+                            Voltar
+                        </button>
+                    </div>
+
+                    <!-- Informações do Horário Selecionado -->
+                    <div id="seatsTripInfo" class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h3 class="text-xl font-semibold text-white mb-2">Informações da Viagem</h3>
+                        <p class="text-gray-300" id="seatsTripDetails"></p>
+                    </div>
+
+                    <!-- Visualização do Ônibus (Top-Down) -->
+                    <div class="bg-gray-700 rounded-lg p-6 mb-6 overflow-x-auto">
+                        <div class="text-center mb-4">
+                            <p class="text-green-400 font-semibold mb-4">FRENTE DO ÔNIBUS 🚌</p>
+                        </div>
+
+                        <!-- Grid de Assentos -->
+                        <div id="seatsGrid" class="inline-block">
+                            <!-- Assentos serão gerados dinamicamente -->
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <p class="text-green-400 font-semibold">FUNDO DO ÔNIBUS</p>
+                        </div>
+                    </div>
+
+                    <!-- Legenda de Assentos -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h3 class="text-lg font-semibold text-white mb-3">Legenda:</h3>
+                        <div class="flex flex-wrap gap-6">
+                            <div class="flex items-center gap-2">
+                                <button class="w-8 h-8 bg-gray-600 border-2 border-gray-500 rounded cursor-not-allowed"></button>
+                                <span class="text-gray-300">Disponível</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="w-8 h-8 bg-green-600 border-2 border-green-500 rounded"></button>
+                                <span class="text-gray-300">Selecionado</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="w-8 h-8 bg-red-600 border-2 border-red-500 rounded cursor-not-allowed" disabled></button>
+                                <span class="text-gray-300">Ocupado</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assento Selecionado e Botão de Confirmação -->
+                    <div id="seatsSelectionInfo" class="bg-gray-700 rounded-lg p-4 mb-6 text-center">
+                        <p class="text-gray-400 mb-3">Assento selecionado: <span id="selectedSeatNumber" class="text-green-400 font-bold">Nenhum</span></p>
+                        <button id="confirmSeatButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Confirmar Assento
+                        </button>
+                    </div>
+
+                    <!-- Área de Mensagens -->
+                    <div id="seatsMessage" class="mt-6 text-center text-sm font-medium">
+                        <!-- Mensagens de sucesso ou erro aparecerão aqui -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -180,6 +246,8 @@
         let db; // Irá guardar a instância do banco de dados em memória
         let SQL; // Irá guardar o motor do sql.js
         let currentUser = null; // Irá guardar o usuário logado
+        let selectedSeat = null; // Irá guardar o assento selecionado
+        let currentTripInfo = null; // Irá guardar informações do horário selecionado
 
         // --- Seletores do DOM ---
         const loaderSection = document.getElementById('loaderSection');
@@ -215,6 +283,16 @@
         const reservasList = document.getElementById('reservasList');
 
         const dashboardMessage = document.getElementById('dashboardMessage');
+
+        // Seletores para a seção de assentos
+        const seatsSection = document.getElementById('seatsSection');
+        const seatsGrid = document.getElementById('seatsGrid');
+        const selectedSeatNumber = document.getElementById('selectedSeatNumber');
+        const confirmSeatButton = document.getElementById('confirmSeatButton');
+        const seatsMessage = document.getElementById('seatsMessage');
+        const backFromSeats = document.getElementById('backFromSeats');
+        const seatsTripInfo = document.getElementById('seatsTripInfo');
+        const seatsTripDetails = document.getElementById('seatsTripDetails');
 
         // --- Função para mostrar mensagens ---
         function showMessage(text, type, target = 'message') {
@@ -283,6 +361,7 @@
                         horario_id INTEGER NOT NULL,
                         data_reserva TEXT NOT NULL,
                         status TEXT DEFAULT 'ativa',
+                        assento_numero INTEGER,
                         FOREIGN KEY (user_id) REFERENCES users(id),
                         FOREIGN KEY (rota_id) REFERENCES rotas(id),
                         FOREIGN KEY (horario_id) REFERENCES horarios(id)
@@ -438,6 +517,85 @@
             showMessage('Logout realizado com sucesso!', 'success');
         });
 
+        // --- Lógica da Seção de Assentos ---
+        backFromSeats.addEventListener('click', () => {
+            seatsSection.classList.add('hidden');
+            dashboardSection.classList.remove('hidden');
+            selectedSeat = null;
+            currentTripInfo = null;
+        });
+
+        confirmSeatButton.addEventListener('click', () => {
+            try {
+                if (selectedSeat === null) {
+                    showMessage('Selecione um assento primeiro!', 'error', 'seatsMessage');
+                    return;
+                }
+                
+                if (!currentTripInfo) {
+                    showMessage('Informações da viagem não encontradas.', 'error', 'seatsMessage');
+                    return;
+                }
+                
+                const dataAtual = new Date().toISOString().split('T')[0];
+                const horarioId = currentTripInfo.horarioId;
+                
+                // Verificar se já existe uma reserva ativa para este horário
+                const verificaReserva = db.exec(`
+                    SELECT * FROM reservas 
+                    WHERE user_id = ${currentUser.id} 
+                    AND horario_id = ${horarioId} 
+                    AND status = 'ativa'
+                `);
+                
+                if (verificaReserva.length > 0 && verificaReserva[0].values.length > 0) {
+                    showMessage('Você já tem uma reserva ativa para este horário.', 'error', 'seatsMessage');
+                    return;
+                }
+                
+                // Obter o rota_id a partir do horario_id
+                const rotaResult = db.exec(`SELECT rota_id FROM horarios WHERE id = ${horarioId}`);
+                if (rotaResult.length === 0) {
+                    showMessage('Erro ao obter informações da rota.', 'error', 'seatsMessage');
+                    return;
+                }
+                
+                const rotaId = rotaResult[0].values[0][0];
+                
+                // Fazer a reserva com o assento selecionado
+                db.run(
+                    "INSERT INTO reservas (user_id, rota_id, horario_id, data_reserva, assento_numero) VALUES (?, ?, ?, ?, ?)", 
+                    [currentUser.id, rotaId, horarioId, dataAtual, selectedSeat]
+                );
+                
+                showMessage(`Reserva confirmada! Assento ${selectedSeat} - ${currentTripInfo.rotaNome} às ${currentTripInfo.horario}`, 'success', 'seatsMessage');
+                
+                // Voltar para o dashboard e ir para a aba de reservas
+                setTimeout(() => {
+                    seatsSection.classList.add('hidden');
+                    dashboardSection.classList.remove('hidden');
+                    tabReservas.click();
+                    selectedSeat = null;
+                    currentTripInfo = null;
+                }, 1500);
+                
+            } catch (err) {
+                console.error('Erro ao confirmar assento:', err);
+                if (err.message.includes('no such column')) {
+                    showMessage('Atualizando banco de dados...', 'info', 'seatsMessage');
+                    // Tentar adicionar coluna assento_numero à tabela reservas
+                    try {
+                        db.run("ALTER TABLE reservas ADD COLUMN assento_numero INTEGER");
+                        confirmSeatButton.click(); // Tentar novamente
+                    } catch (altErr) {
+                        console.log('Coluna pode já existir');
+                    }
+                } else {
+                    showMessage('Erro ao confirmar reserva.', 'error', 'seatsMessage');
+                }
+            }
+        });
+
         // --- Lógica das Abas do Dashboard ---
         tabRotas.addEventListener('click', () => {
             rotasContent.classList.remove('hidden');
@@ -565,7 +723,7 @@
         function carregarReservas() {
             try {
                 const result = db.exec(`
-                    SELECT rv.id, rt.nome, h.horario_saida, rv.data_reserva, rv.status 
+                    SELECT rv.id, rt.nome, h.horario_saida, rv.data_reserva, rv.status, rv.assento_numero 
                     FROM reservas rv 
                     JOIN rotas rt ON rv.rota_id = rt.id 
                     JOIN horarios h ON rv.horario_id = h.id 
@@ -588,10 +746,13 @@
                             statusClass = 'text-red-400';
                         }
                         
+                        const assentoInfo = reserva[5] ? `<p class="text-gray-300">Assento: <span class="text-blue-400 font-semibold">#${reserva[5]}</span></p>` : '';
+                        
                         reservaDiv.innerHTML = `
                             <h4 class="text-lg font-semibold text-white">${reserva[1]}</h4>
                             <p class="text-gray-300">Horário: ${reserva[2]}</p>
                             <p class="text-gray-300">Data da Reserva: ${reserva[3]}</p>
+                            ${assentoInfo}
                             <p class="${statusClass} font-semibold">Status: ${reserva[4]}</p>
                             ${reserva[4] === 'ativa' ? 
                                 `<button class="mt-3 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out cancelar-reserva" data-reserva-id="${reserva[0]}">
@@ -622,45 +783,32 @@
         // --- Funções para operações ---
         function fazerReserva(horarioId, rotaNome, horario) {
             try {
-                const dataAtual = new Date().toISOString().split('T')[0];
+                // Armazenar informações da viagem selecionada
+                currentTripInfo = {
+                    horarioId: horarioId,
+                    rotaNome: rotaNome,
+                    horario: horario
+                };
                 
-                // Verificar se já existe uma reserva ativa para este horário
-                const verificaReserva = db.exec(`
-                    SELECT * FROM reservas 
-                    WHERE user_id = ${currentUser.id} 
-                    AND horario_id = ${horarioId} 
-                    AND status = 'ativa'
-                `);
+                // Mostrar informações na seção de assentos
+                seatsTripDetails.textContent = `${rotaNome} - ${horario}`;
                 
-                if (verificaReserva.length > 0 && verificaReserva[0].values.length > 0) {
-                    showMessage('Você já tem uma reserva ativa para este horário.', 'error', 'dashboardMessage');
-                    return;
-                }
+                // Resetar seleção de assento
+                selectedSeat = null;
+                selectedSeatNumber.textContent = 'Nenhum';
+                confirmSeatButton.disabled = true;
                 
-                // Obter o rota_id a partir do horario_id
-                const rotaResult = db.exec(`SELECT rota_id FROM horarios WHERE id = ${horarioId}`);
-                if (rotaResult.length === 0) {
-                    showMessage('Erro ao obter informações da rota.', 'error', 'dashboardMessage');
-                    return;
-                }
+                // Gerar assentos
+                gerarAssentos();
                 
-                const rotaId = rotaResult[0].values[0][0];
+                // Mudar para a seção de assentos
+                dashboardSection.classList.add('hidden');
+                seatsSection.classList.remove('hidden');
+                seatsMessage.textContent = '';
                 
-                // Fazer a reserva
-                db.run(
-                    "INSERT INTO reservas (user_id, rota_id, horario_id, data_reserva) VALUES (?, ?, ?, ?)", 
-                    [currentUser.id, rotaId, horarioId, dataAtual]
-                );
-                
-                showMessage(`Reserva feita com sucesso para ${rotaNome} às ${horario}!`, 'success', 'dashboardMessage');
-                
-                // Atualizar a lista de reservas se estiver na aba de reservas
-                if (!reservasContent.classList.contains('hidden')) {
-                    carregarReservas();
-                }
             } catch (err) {
-                console.error('Erro ao fazer reserva:', err);
-                showMessage('Erro ao fazer reserva.', 'error', 'dashboardMessage');
+                console.error('Erro ao iniciar seleção de assentos:', err);
+                showMessage('Erro ao acessar seleção de assentos.', 'error', 'dashboardMessage');
             }
         }
 
@@ -672,6 +820,95 @@
             } catch (err) {
                 console.error('Erro ao cancelar reserva:', err);
                 showMessage('Erro ao cancelar reserva.', 'error', 'dashboardMessage');
+            }
+        }
+
+        // --- Funções para Seleção de Assentos ---
+        function gerarAssentos() {
+            seatsGrid.innerHTML = '';
+            
+            // Criar container para o grid de assentos (2 colunas de 2 assentos separadas por corredor)
+            const seatsContainer = document.createElement('div');
+            seatsContainer.className = 'flex flex-col gap-3 justify-center';
+            
+            let seatNumber = 1;
+            
+            // 10 linhas de assentos
+            for (let linha = 1; linha <= 10; linha++) {
+                const linhaDiv = document.createElement('div');
+                linhaDiv.className = 'flex items-center justify-center gap-8';
+                
+                // Grupo da esquerda (2 assentos)
+                const leftGroup = document.createElement('div');
+                leftGroup.className = 'flex gap-2';
+                
+                for (let i = 0; i < 2; i++) {
+                    const seatButton = criarBotaoAssento(seatNumber);
+                    leftGroup.appendChild(seatButton);
+                    seatNumber++;
+                }
+                
+                linhaDiv.appendChild(leftGroup);
+                
+                // Corredor
+                const corredor = document.createElement('div');
+                corredor.className = 'w-8 h-8 flex items-center justify-center text-gray-500 font-bold';
+                corredor.textContent = '||';
+                linhaDiv.appendChild(corredor);
+                
+                // Grupo da direita (2 assentos)
+                const rightGroup = document.createElement('div');
+                rightGroup.className = 'flex gap-2';
+                
+                for (let i = 0; i < 2; i++) {
+                    const seatButton = criarBotaoAssento(seatNumber);
+                    rightGroup.appendChild(seatButton);
+                    seatNumber++;
+                }
+                
+                linhaDiv.appendChild(rightGroup);
+                seatsContainer.appendChild(linhaDiv);
+            }
+            
+            seatsGrid.appendChild(seatsContainer);
+        }
+        
+        function criarBotaoAssento(numero) {
+            const button = document.createElement('button');
+            button.className = 'seat-button w-12 h-12 rounded font-bold text-sm border-2 transition duration-200 ease-in-out hover:scale-110 focus:outline-none bg-gray-600 border-gray-500 text-white hover:bg-gray-500 cursor-pointer';
+            button.textContent = numero;
+            button.dataset.seatNumber = numero;
+            button.type = 'button';
+            
+            button.addEventListener('click', () => selecionarAssento(numero, button));
+            
+            return button;
+        }
+        
+        function selecionarAssento(numero, button) {
+            // Se for o mesmo assento, deselecionar
+            if (selectedSeat === numero) {
+                selectedSeat = null;
+                selectedSeatNumber.textContent = 'Nenhum';
+                button.classList.remove('bg-green-600', 'border-green-500');
+                button.classList.add('bg-gray-600', 'border-gray-500');
+                confirmSeatButton.disabled = true;
+            } else {
+                // Remover seleção anterior
+                if (selectedSeat !== null) {
+                    const previousButton = document.querySelector(`[data-seat-number="${selectedSeat}"]`);
+                    if (previousButton) {
+                        previousButton.classList.remove('bg-green-600', 'border-green-500');
+                        previousButton.classList.add('bg-gray-600', 'border-gray-500');
+                    }
+                }
+                
+                // Selecionar novo assento
+                selectedSeat = numero;
+                selectedSeatNumber.textContent = numero;
+                button.classList.remove('bg-gray-600', 'border-gray-500');
+                button.classList.add('bg-green-600', 'border-green-500');
+                confirmSeatButton.disabled = false;
             }
         }
     </script>
