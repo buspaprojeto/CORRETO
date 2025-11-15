@@ -1,4 +1,5 @@
 Projeto-Buspa
+
 📋 Descrição do Projeto Sistema web para gerenciamento de transporte universitário, permitindo que alunos visualizem rotas, horários disponíveis e façam reservas de passagens. Desenvolvido como uma aplicação frontend completa com banco de dados SQLite em memória.
 
 🛠 Stack Tecnológica Frontend: HTML5, Tailwind CSS, JavaScript ES6+
