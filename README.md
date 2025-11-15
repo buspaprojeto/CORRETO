@@ -1,191 +1,53 @@
-# BUSPÃ
 Projeto-Buspa
-🚌 Sistema de Transporte Universitário
+📋 Descrição do Projeto Sistema web para gerenciamento de transporte universitário, permitindo que alunos visualizem rotas, horários disponíveis e façam reservas de passagens. Desenvolvido como uma aplicação frontend completa com banco de dados SQLite em memória.
 
-Um sistema web completo para gerenciamento de transporte universitário, desenvolvido como projeto acadêmico.
+🛠 Stack Tecnológica Frontend: HTML5, Tailwind CSS, JavaScript ES6+
 
-📋 Descrição do Projeto
+Banco de Dados: SQLite em memória (sql.js)
 
-Sistema de transporte universitário que permite aos alunos visualizar rotas, consultar horários e fazer reservas de ônibus de forma simples e intuitiva.
+Bibliotecas:
 
-✨ Funcionalidades
+Tailwind CSS (via CDN)
 
-🔐 Sistema de Autenticação Cadastro de usuários com validação de email único
+SQL.js (SQLite compilado para WebAssembly)
 
-Login seguro com verificação de credenciais
+Se estiver usando Git
+git clone Certifique-se de ter uma conexão com internet para carregar os recursos externos (CDNs do Tailwind CSS e SQL.js).
 
-Logout com redirecionamento automático
+🚀 Execução Abra o projeto em um servidor local:
 
-🗺️ Gestão de Transporte Visualização de rotas disponíveis
+Recomenda-se usar a extensão Live Server do VS Code
 
-Consulta de horários por rota
+Ou qualquer outro servidor HTTP local
 
-Sistema de reservas integrado
+Acesse o sistema:
 
-Cancelamento de reservas ativas
+Abra o arquivo index.html através do servidor local
 
-👤 Área do Usuário Dashboard personalizado
+Exemplo: http://localhost:3000 ou http://127.0.0.1:5500
 
-Histórico de reservas
+Fluxo de uso:
 
-Status das reservas (ativa/cancelada)
+Clique em "Iniciar Sistema"
 
-🛠️ Tecnologias Utilizadas Frontend: HTML5, Tailwind CSS, JavaScript
+Faça login ou cadastre-se
 
-Banco de Dados: SQL.js (SQLite no navegador)
+Explore rotas, horários e faça reservas
 
-Armazenamento: Local (navegador)
+👤 Credenciais de Teste Admin: admin@universidade.com / 123456
 
-🚀 Como Executar o Projeto
+Ou cadastre um novo usuário através da aba "Cadastro"
 
-Pré-requisitos Navegador web moderno
+⚙️ Funcionalidades ✅ Autenticação de usuários (login/cadastro)
 
-Editor de código (recomendado: VSCode)
+✅ Visualização de rotas disponíveis
 
-Extensão Live Server (opcional)
+✅ Consulta de horários por rota
 
-Execução com VSCode Clone ou baixe o projeto
+✅ Sistema de reservas
 
-Abra o arquivo index.html no VSCode
+✅ Cancelamento de reservas
 
-Instale a extensão Live Server (se não tiver):
+✅ Interface responsiva e moderna
 
-Vá em Extensions (Ctrl+Shift+X)
-
-Procure por "Live Server" (Ritwick Dey)
-
-Instale a extensão
-
-Execute o projeto:
-
-Clique com botão direito em index.html
-
-Selecione "Open with Live Server"
-
-Ou clique em "Go Live" no canto inferior direito
-
-Execução Simples Abra diretamente o arquivo index.html no navegador
-
-Ou arraste o arquivo para uma janela do navegador
-
-📖 Como Usar o Sistema
-
-Primeiro Acesso Inicie o sistema clicando em "Iniciar Sistema"
-
-Cadastre-se ou use as credenciais de exemplo:
-
-Email: admin@universidade.com
-
-Senha: 123456
-
-Navegando no Sistema Rotas: Visualize todas as rotas disponíveis
-
-Horários: Consulte os horários por rota
-
-Reservas: Faça e gerencie suas reservas
-
-Fazendo uma Reserva Acesse a aba "Rotas"
-
-Clique em "Ver Horários" na rota desejada
-
-Selecione um horário e clique em "Fazer Reserva"
-
-Confirme a reserva na aba "Minhas Reservas"
-
-🗃️ Estrutura do Banco de Dados
-
-O sistema utiliza 4 tabelas principais:
-
-users - Usuários do sistema id (INTEGER, PRIMARY KEY)
-
-email (TEXT, UNIQUE)
-
-password (TEXT)
-
-tipo (TEXT) - 'aluno' ou 'admin'
-
-rotas - Rotas de transporte id (INTEGER, PRIMARY KEY)
-
-nome (TEXT)
-
-origem (TEXT)
-
-destino (TEXT)
-
-descricao (TEXT)
-
-horarios - Horários das rotas id (INTEGER, PRIMARY KEY)
-
-rota_id (INTEGER, FOREIGN KEY)
-
-horario_saida (TEXT)
-
-reservas - Reservas dos usuários id (INTEGER, PRIMARY KEY)
-
-user_id (INTEGER, FOREIGN KEY)
-
-rota_id (INTEGER, FOREIGN KEY)
-
-horario_id (INTEGER, FOREIGN KEY)
-
-data_reserva (TEXT)
-
-status (TEXT) - 'ativa' ou 'cancelada'
-
-🎯 Dados de Exemplo Incluídos
-
-Rotas Pré-cadastradas Campus Central: Centro → Campus Universitário
-
-Zona Norte: Zona Norte → Campus Universitário
-
-Zona Sul: Zona Sul → Campus Universitário
-
-Horários Disponíveis Múltiplos horários por rota (07:00, 08:30, 10:00, etc.)
-
-Usuário Admin Email: admin@universidade.com
-
-Senha: 123456
-
-🔧 Características Técnicas
-
-Frontend Design Responsivo com Tailwind CSS
-
-Interface Dark Mode otimizada
-
-Validação em tempo real de formulários
-
-Feedback visual para todas as ações
-
-Backend (Client-side) Banco SQLite no navegador com SQL.js
-
-Persistência local durante a sessão
-
-Consultas parametrizadas contra SQL injection
-
-Transações ACID garantidas
-
-📱 Compatibilidade
-
-✅ Chrome 60+
-
-✅ Firefox 55+
-
-✅ Safari 11+
-
-✅ Edge 79+
-
-🐛 Solução de Problemas
-
-Erro ao carregar banco de dados Solução: Recarregue a página e clique em "Iniciar Sistema"
-
-Reserva não confirmada Solução: Verifique se já existe reserva ativa para o mesmo horário
-
-Login não funciona Solução: Use as credenciais de exemplo ou cadastre novo usuário
-
-📄 Licença
-
-Este projeto foi desenvolvido para fins acadêmicos.
-
-👨‍💻 Desenvolvido por
-
-Projeto acadêmico - Sistema de Transporte Universitário
+Nota: O banco de dados é em memória, portanto os dados serão perdidos ao recarregar a página.
